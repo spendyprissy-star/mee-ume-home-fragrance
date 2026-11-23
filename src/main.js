@@ -205,7 +205,7 @@ function renderFrame(t) {
 let lastTs = performance.now();
 function animate(now) {
   requestAnimationFrame(animate);
-  const dt = Math.min(0.05, (now - lastTs) / 1000);
+  const dt = Math.max(0, Math.min(0.05, (now - lastTs) / 1000));
   lastTs = now;
 
   if (state.playing && !state.inspecting) {
