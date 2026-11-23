@@ -258,9 +258,23 @@ function startExport() {
   }
 
   const preferredMimes = hasAudio
-    ? ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
-    : ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+    ? [
+        'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+        'video/mp4;codecs=h264,aac',
+        'video/mp4',
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm',
+      ]
+    : [
+        'video/mp4;codecs=avc1.42E01E',
+        'video/mp4',
+        'video/webm;codecs=vp9',
+        'video/webm;codecs=vp8',
+        'video/webm',
+      ];
   const mimeType = preferredMimes.find((m) => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+  const fileExt = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
 
   const chunks = [];
   mediaRecorder = new MediaRecorder(videoStream, { mimeType, videoBitsPerSecond: 6_000_000 });
@@ -269,18 +283,22 @@ function startExport() {
   };
   mediaRecorder.onstop = () => {
     if (chunks.length > 0 && state.exportingComplete) {
-      const blob = new Blob(chunks, { type: 'video/webm' });
+      const blob = new Blob(chunks, { type: mimeType.split(';')[0] });
       const url = URL.createObjectURL(blob);
+      const filename = `Mee-Ume-Advert-${state.aspectMode === '9:16' ? '9x16' : '16x9'}.${fileExt}`;
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Mee-Ume-Advert-${state.aspectMode === '9:16' ? '9x16' : '16x9'}.webm`;
+      a.download = filename;
+      a.rel = 'noopener';
+      document.body.appendChild(a);
       a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-      exportStatusEl.textContent = 'Export complete — WebM downloaded!';
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 15000);
+      exportStatusEl.textContent = `Saved to your Downloads folder: ${filename}`;
     }
     state.exporting = false;
     state.exportingComplete = false;
-    exportBtn.textContent = 'Export Video (.webm)';
+    exportBtn.textContent = 'Export & Save Video';
     exportBtn.classList.remove('recording');
   };
 
@@ -291,6 +309,7 @@ function startExport() {
   playBtn.textContent = 'Pause';
   exportBtn.textContent = 'Cancel Export';
   exportBtn.classList.add('recording');
+  exportStatusEl.textContent = `Recording ${fileExt.toUpperCase()}…`;
   mediaRecorder.start(250);
 }
 
@@ -309,7 +328,9 @@ function cancelExport() {
   if (mediaRecorder && mediaRecorder.state !== 'inactive') {
     mediaRecorder.stop();
   }
-  exportStatusEl.textContent = 'Export cancelled.';
+  exportStatusEl.textContent = 'Export cancelled — no file was saved.';
+  exportBtn.textContent = 'Export & Save Video';
+  exportBtn.classList.remove('recording');
 }
 
 // UI Event Listeners
